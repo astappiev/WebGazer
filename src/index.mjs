@@ -280,7 +280,8 @@ async function loop() {
     // Get gaze prediction (ask clm to track; pass the data to the regressor; get back a prediction)
     latestGazeData = getPrediction();
     // Count time
-    var elapsedTime = performance.now() - clockStart;
+    var absoluteTime = performance.now();
+    var elapsedTime = absoluteTime - clockStart;
 
     // Draw face overlay
     if( webgazer.params.showFaceOverlay )
@@ -299,7 +300,7 @@ async function loop() {
     latestGazeData = await latestGazeData;
 
     // [20200623 xk] callback to function passed into setGazeListener(fn)
-    callback(latestGazeData, elapsedTime);
+    callback(latestGazeData, elapsedTime, absoluteTime);
 
     if( latestGazeData ) {
       // [20200608 XK] Smoothing across the most recent 4 predictions, do we need this with Kalman filter?
