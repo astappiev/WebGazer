@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const { assert } = require('chai');
-const TFFaceMesh = require('@tensorflow-models/facemesh');
+const TFFaceMesh = require('@tensorflow-models/face-landmarks-detection');
 
 before(async () => {
 	const parent_dir = __dirname.substring(0,__dirname.length-4)
@@ -15,15 +15,15 @@ before(async () => {
 	await page.goto('http://localhost:3000/calibration.html?');
 	page.coverage.startJSCoverage();
 	await page.goto('http://localhost:3000/calibration.html?');
-	await page.waitFor(1500)
+	await page.waitForTimeout(1500)
 	await page.waitForSelector('#start_calibration')
 	//calibration button is not immediately clickable due to css transition
-	await page.waitFor(2500)
+	await page.waitForTimeout(2500)
 
 	await page.evaluate(async() => {
 		document.querySelector("#start_calibration").click()
 	})
-	await page.waitFor(1500)
+	await page.waitForTimeout(1500)
 	await page.evaluate(async() =>{
 		document.querySelector("body > div.swal-overlay.swal-overlay--show-modal > div > div.swal-footer > div > button").click()
 	})
