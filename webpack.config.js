@@ -1,6 +1,5 @@
 const path = require('path');
 const webpack = require('webpack');
-const createVariants = require('parallel-webpack').createVariants;
 
 const bannerString =`
  WebGazer.js: Scalable Webcam EyeTracking Using User Interactions
@@ -12,9 +11,9 @@ function createConfig(options) {
   return {
     entry: './src/index.mjs',
     output: {
-      filename: 'webgazer' + 
-		(options.target == 'var' ? '' : '.' + options.target) + 
-		(options.minified ? '.min' : '') + 
+      filename: 'webgazer' +
+		(options.target === 'var' ? '' : '.' + options.target) +
+		(options.minified ? '.min' : '') +
 		'.js',
       library: 'webgazer',
       libraryTarget: options.target,
@@ -42,6 +41,14 @@ function createConfig(options) {
     devtool: "source-map"
   };
 }
+
+function createVariants(variants, configCallback) {
+  const configs = Object.keys(variants)
+      .map(key => config => variants[key].map(value => Object.assign({}, config, {[key]: value})))
+      .reduce((options, transform) => [].concat.apply([], options.map(transform)), [{}]);
+  return configCallback && configs.map(configCallback) || configs;
+}
+
 module.exports = createVariants({
   minified: [true, false],
   target: ['var','commonjs2']
