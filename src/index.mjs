@@ -425,6 +425,10 @@ async function loadGlobalData() {
   // settings = await localforage.getItem(localstorageSettingsLabel);
   // settings = settings || defaults.settings;
 
+  if (Array.isArray(data) && data.length > 0) {
+    return; // data already loaded
+  }
+
   // Get click data from localforage
   var loadData = await localforage.getItem(localstorageDataLabel);
   setStoreData(loadData);
