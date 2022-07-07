@@ -422,20 +422,12 @@ var removeMouseEventListeners = function() {
 async function loadGlobalData() {
   // Get settings object from localforage
   // [20200611 xk] still unsure what this does, maybe would be good for Kalman filter settings etc?
-  settings = await localforage.getItem(localstorageSettingsLabel);
-  settings = settings || defaults;
+  // settings = await localforage.getItem(localstorageSettingsLabel);
+  // settings = settings || defaults.settings;
 
   // Get click data from localforage
   var loadData = await localforage.getItem(localstorageDataLabel);
-  loadData = loadData || defaults;
-
-  // Set global var data to newly loaded data
-  data = loadData;
-
-  // Load data into regression model(s)
-  for (var reg in regs) {
-    regs[reg].setData(loadData);
-  }
+  setStoreData(loadData);
 
   console.log("loaded stored data into regression model");
 }
@@ -444,14 +436,31 @@ async function loadGlobalData() {
  * Adds data to localforage
  */
 async function setGlobalData() {
-  // Grab data from regression model
-  var storeData = regs[0].getData() || data; // Array
-
   // Store data into localforage
-  localforage.setItem(localstorageSettingsLabel, settings) // [20200605 XK] is 'settings' ever being used?
-  localforage.setItem(localstorageDataLabel, storeData);
+  // await localforage.setItem(localstorageSettingsLabel, settings) // [20200605 XK] is 'settings' ever being used?
+  await localforage.setItem(localstorageDataLabel, getStoreData());
   //TODO data should probably be stored in webgazer object instead of each regression model
   //     -> requires duplication of data, but is likely easier on regression model implementors
+}
+
+/**
+ * Grab data from regression model
+ */
+function getStoreData() {
+  return regs[0].getData() || data;
+}
+
+/**
+ * Grab data from regression model
+ */
+function setStoreData(newData) {
+  if (newData && newData.length > 0) {
+    data = newData;
+
+    for (var reg in regs) {
+      regs[reg].setData(data);
+    }
+  }
 }
 
 /**
@@ -464,6 +473,22 @@ function clearData() {
   // Removes data from regression model
   for (var reg in regs) {
     regs[reg].init();
+  }
+}
+
+webgazer.exportData = async function() {
+  if (webgazer.params.saveDataAcrossSessions) {
+    await loadGlobalData();
+  }
+
+  return getStoreData();
+}
+
+webgazer.importData = async function(data) {
+  setStoreData(data);
+
+  if (webgazer.params.saveDataAcrossSessions) {
+    await setGlobalData()
   }
 }
 
