@@ -601,6 +601,7 @@ async function init(stream) {
   });
 
   addMouseEventListeners();
+  webgazer.showVideoPreview(webgazer.params.showVideoPreview);
 
   //BEGIN CALLBACK LOOP
   paused = false;
@@ -783,9 +784,9 @@ webgazer.detectCompatibility = function() {
  */
 webgazer.showVideoPreview = function(val) {
   webgazer.params.showVideoPreview = val;
-  webgazer.showVideo(val && webgazer.params.showVideo);
-  webgazer.showFaceOverlay(val && webgazer.params.showFaceOverlay);
-  webgazer.showFaceFeedbackBox(val && webgazer.params.showFaceFeedbackBox);
+  webgazer.showVideo(val);
+  webgazer.showFaceOverlay(val);
+  webgazer.showFaceFeedbackBox(val);
   return webgazer;
 }
 
