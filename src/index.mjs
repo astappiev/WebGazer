@@ -280,7 +280,8 @@ async function loop() {
     // Get gaze prediction (ask clm to track; pass the data to the regressor; get back a prediction)
     latestGazeData = getPrediction();
     // Count time
-    var elapsedTime = performance.now() - clockStart;
+    var absoluteTime = performance.now();
+    var elapsedTime = absoluteTime - clockStart;
 
     // Draw face overlay
     if( webgazer.params.showFaceOverlay )
@@ -299,7 +300,7 @@ async function loop() {
     latestGazeData = await latestGazeData;
 
     // [20200623 xk] callback to function passed into setGazeListener(fn)
-    callback(latestGazeData, elapsedTime);
+    callback(latestGazeData, elapsedTime, absoluteTime);
 
     if( latestGazeData ) {
       // [20200608 XK] Smoothing across the most recent 4 predictions, do we need this with Kalman filter?
@@ -421,20 +422,16 @@ var removeMouseEventListeners = function() {
 async function loadGlobalData() {
   // Get settings object from localforage
   // [20200611 xk] still unsure what this does, maybe would be good for Kalman filter settings etc?
-  settings = await localforage.getItem(localstorageSettingsLabel);
-  settings = settings || defaults;
+  // settings = await localforage.getItem(localstorageSettingsLabel);
+  // settings = settings || defaults.settings;
+
+  if (Array.isArray(data) && data.length > 0) {
+    return; // data already loaded
+  }
 
   // Get click data from localforage
   var loadData = await localforage.getItem(localstorageDataLabel);
-  loadData = loadData || defaults;
-
-  // Set global var data to newly loaded data
-  data = loadData;
-
-  // Load data into regression model(s)
-  for (var reg in regs) {
-    regs[reg].setData(loadData);
-  }
+  setStoreData(loadData || defaults.data);
 
   console.log("loaded stored data into regression model");
 }
@@ -443,14 +440,33 @@ async function loadGlobalData() {
  * Adds data to localforage
  */
 async function setGlobalData() {
-  // Grab data from regression model
-  var storeData = regs[0].getData() || data; // Array
-
   // Store data into localforage
-  localforage.setItem(localstorageSettingsLabel, settings) // [20200605 XK] is 'settings' ever being used?
-  localforage.setItem(localstorageDataLabel, storeData);
+  // localforage.setItem(localstorageSettingsLabel, settings) // [20200605 XK] is 'settings' ever being used?
+  localforage.setItem(localstorageDataLabel, getStoreData());
   //TODO data should probably be stored in webgazer object instead of each regression model
   //     -> requires duplication of data, but is likely easier on regression model implementors
+}
+
+/**
+ * Grab data from regression model
+ */
+function getStoreData() {
+  return regs[0].getData() || data;
+}
+
+/**
+ * Grab data from regression model
+ */
+function setStoreData(newData) {
+  if (newData && newData.length > 0) {
+    // Set global var data to newly loaded data
+    data = newData;
+
+    // Load data into regression model(s)
+    for (var reg in regs) {
+      regs[reg].setData(data);
+    }
+  }
 }
 
 /**
@@ -463,6 +479,22 @@ function clearData() {
   // Removes data from regression model
   for (var reg in regs) {
     regs[reg].init();
+  }
+}
+
+webgazer.exportData = async function() {
+  if (webgazer.params.saveDataAcrossSessions) {
+    await loadGlobalData();
+  }
+
+  return getStoreData();
+}
+
+webgazer.importData = async function(data) {
+  setStoreData(data);
+
+  if (webgazer.params.saveDataAcrossSessions) {
+    await setGlobalData()
   }
 }
 
@@ -575,6 +607,7 @@ async function init(stream) {
   });
 
   addMouseEventListeners();
+  webgazer.showVideoPreview(webgazer.params.showVideoPreview);
 
   //BEGIN CALLBACK LOOP
   paused = false;
